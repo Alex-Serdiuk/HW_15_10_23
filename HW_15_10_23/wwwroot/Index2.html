@@ -3,13 +3,15 @@
 <head>
     <meta charset="utf-8" />
     <title>To-do CRUD</title>
+    <link rel="stylesheet" href="css/site.css" />
 </head>
 <body>
     <h1>To-do CRUD</h1>
     <input type="date" id="date" name="date" value="2023-10-19">
+    <button id="get-tasks" onclick="getItems()">Отримати справи</button>
     <h3>Add</h3>
     <form action="javascript:void(0);" method="POST" onsubmit="addItem()">
-        <input type="text" id="add-name" placeholder="Назва справи">
+        <input type="text" id="add-title" placeholder="Назва справи">
         <input type="text" id="add-description" placeholder="Опис справи">
         <input type="checkbox" id="add-isComplete">
         <input type="date" id="add-dueDate">
@@ -21,7 +23,7 @@
         <form action="javascript:void(0);" onsubmit="updateItem()">
             <input type="hidden" id="edit-id">
             <input type="checkbox" id="edit-isComplete">
-            <input type="text" id="edit-name">
+            <input type="text" id="edit-title">
             <input type="text" id="edit-description">
             <input type="date" id="edit-dueDate">
             <input type="submit" value="Save">
@@ -42,10 +44,10 @@
         </tr>
         <tbody id="todos"></tbody>
     </table>
-
-    <script>
+    <button id="deleteCompletedTasksButton">Видалити всі виконані справи</button>
+    <!--<script>
         getItems();
-    </script>
+    </script>-->
 
     <script>
         const uri = 'api/tasks';
@@ -58,6 +60,203 @@
                 .then(data => _displayItems(data))
                 .catch(error => console.error('Unable to get items.', error));
         }
+
+        function addItem() {
+            debugger;
+            let id = 0;
+            const addTitleTextbox = document.getElementById('add-title');
+            const addDescriptionTextbox = document.getElementById('add-description');
+            const addisCompleteCheckbox = document.getElementById('add-isComplete');
+            const addDueDate = document.getElementById('add-dueDate');
+
+            const item = {
+                id: id,
+                title: addTitleTextbox.value.trim(),
+                description: addDescriptionTextbox.value.trim(),
+                completed: addisCompleteCheckbox.checked,
+                dueDate: addDueDate.value
+            };
+
+            fetch(uri, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(item)
+            })
+                .then(response => response.json())
+                .then(() => {
+                    getItems();
+                    addTitleTextbox.value = '';
+                    addDescriptionTextbox.value = '';
+                    addisCompleteCheckbox.checked = false;
+                })
+                .catch(error => console.error('Unable to add item.', error));
+        }
+
+        function deleteItem(id) {
+            fetch(`${uri}/${id}`, {
+                method: 'DELETE'
+            })
+                .then(() => getItems())
+                .catch(error => console.error('Unable to delete item.', error));
+        }
+
+        function displayEditForm(id) {
+            
+            const item = todos.find(item => item.id === id);
+
+            // Получить дату из объекта item
+            var itemDueDate = new Date(item.dueDate);
+
+            // Подготовить дату в формате 'yyyy-MM-dd'
+            var year = itemDueDate.getFullYear();
+            var month = (itemDueDate.getMonth() + 1).toString().padStart(2, '0'); // +1, так как месяцы в JavaScript начинаются с 0
+            var day = itemDueDate.getDate().toString().padStart(2, '0');
+
+            var formattedDueDate = year + '-' + month + '-' + day;
+
+            document.getElementById('edit-title').value = item.title;
+            document.getElementById('edit-description').value = item.description;
+            document.getElementById('edit-dueDate').value = formattedDueDate.toString();
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-isComplete').checked = item.completed;
+            document.getElementById('editForm').style.display = 'block';
+        }
+
+        function updateItem() {
+            const itemId = document.getElementById('edit-id').value;
+
+            const item = {
+                id: parseInt(itemId, 10),
+                title: document.getElementById('edit-title').value.trim(),
+                description: document.getElementById('edit-description').value.trim(),
+                completed: document.getElementById('edit-isComplete').checked,
+                dueDate: document.getElementById('edit-dueDate').value
+            };
+
+            fetch(`${uri}/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(item)
+            })
+                .then(() => getItems())
+                .catch(error => console.error('Unable to update item.', error));
+
+            closeInput();
+
+            return false;
+        }
+
+        function closeInput() {
+            document.getElementById('editForm').style.display = 'none';
+        }
+
+        function _displayCount(itemCount) {
+            const name = (itemCount === 1) ? 'to-do' : 'to-dos';
+
+            document.getElementById('counter').innerText = `${itemCount} ${name}`;
+        }
+
+        function _displayItems(data) {
+            const tBody = document.getElementById('todos');
+            tBody.innerHTML = '';
+
+            _displayCount(data.length);
+
+            const button = document.createElement('button');
+
+            data.forEach(item => {
+                let isCompleteCheckbox = document.createElement('input');
+                isCompleteCheckbox.type = 'checkbox';
+                /*isCompleteCheckbox.disabled = true;*/
+                isCompleteCheckbox.checked = item.completed;
+                isCompleteCheckbox.addEventListener('change', () => {
+                    // Викликаємо функцію _toggleTaskCompleted при зміні стану чекбоксу
+                    _toggleTaskCompleted(item.id, isCompleteCheckbox.checked);
+                });
+
+                let editButton = button.cloneNode(false);
+                editButton.innerText = 'Edit';
+                editButton.setAttribute('onclick', `displayEditForm(${item.id})`);
+
+                let deleteButton = button.cloneNode(false);
+                deleteButton.innerText = 'Delete';
+                deleteButton.setAttribute('onclick', `deleteItem(${item.id})`);
+
+                let tr = tBody.insertRow();
+
+                let td1 = tr.insertCell(0);
+                td1.appendChild(isCompleteCheckbox);
+
+                let td2 = tr.insertCell(1);
+                let textNode = document.createTextNode(item.title);
+                td2.appendChild(textNode);
+
+                let td3 = tr.insertCell(2);
+                let description = document.createTextNode(item.description);
+                td3.appendChild(description);
+
+                let td4 = tr.insertCell(3);
+                let dueDate = document.createTextNode(item.dueDate);
+                td4.appendChild(dueDate);
+
+                let td5 = tr.insertCell(4);
+                td5.appendChild(editButton);
+
+                let td6 = tr.insertCell(5);
+                td6.appendChild(deleteButton);
+            });
+
+            todos = data;
+        }
+
+        // Функція для відправки запиту на сервер для оновлення статусу виконання справи
+        async function _toggleTaskCompleted(taskId, completed) {
+            try {
+                const response = await fetch(`${uri}/${taskId}/completed`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(completed)
+                });
+
+                if (response.status === 204) {
+                    // Справа успішно оновлена на сервері
+                } else {
+                    // Обробка помилок
+                    console.error('Помилка при оновленні статусу виконання справи');
+                }
+            } catch (error) {
+                console.error('Помилка при виконанні запиту на сервер', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('deleteCompletedTasksButton').addEventListener('click', function () {
+                fetch('/api/tasks/deletecompleted', {
+                    method: 'DELETE',
+                })
+                    .then(function (response) {
+                        if (response.ok) {
+                            alert('Всі виконані справи видалено');
+                            getItems();
+                        } else {
+                            alert('Помилка під час видалення виконаних справ');
+                        }
+                    })
+                    .catch(function (error) {
+                        alert('Помилка під час видалення виконаних справ: ' + error.message);
+                    });
+            });
+        });
+
+
     </script>
 </body>
 </html>

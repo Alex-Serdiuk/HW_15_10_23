@@ -23,22 +23,19 @@ public class TasksController : ControllerBase
     //    return View();
     //}
 
+
     // GET: api/Tasks
     // Переглянути список справ на обрану дату
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Task>>> GetTasks([FromQuery] DateTime date)
     {
-        var tasks = new List<Models.Task>();
-        if (date == null)
+        var tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
+
+        if (tasks == null)
         {
-            tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
+            return NotFound();
         }
-        else 
-        {
-            // фільтруємо справи за датою
-            tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
-        }
-       
+
         return Ok(tasks);
     }
 
@@ -102,11 +99,15 @@ public class TasksController : ControllerBase
     public async Task<ActionResult<Task>> PostTask([FromBody] Task task)
     {
         _logger.LogInformation("Add todo item");
+        if (_context.Tasks == null)
+        {
+            return Problem("Entity set 'TodoContext.Tasks'  is null.");
+        }
         _context.Tasks.Add(task); // додаємо справу до контексту
         await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
 
-        //return CreatedAtAction("GetTask", new { id = task.Id }, task); // повертаємо 201 і справу
-        return Ok(task);
+        return CreatedAtAction("GetTask", new { id = task.Id }, task); // повертаємо 201 і справу
+        //return Ok(task);
     }
 
     // DELETE: api/Tasks/5
@@ -156,6 +157,22 @@ public class TasksController : ControllerBase
         }
 
         return NoContent(); // повертаємо 204
+    }
+
+    [HttpDelete("deletecompleted")]
+    public async Task<IActionResult> DeleteCompletedTasks()
+    {
+        var completedTasks = await _context.Tasks.Where(t => t.Completed).ToListAsync();
+
+        if (completedTasks.Count == 0)
+        {
+            return NoContent(); // Якщо немає виконаних справ, повертаємо 204 (No Content)
+        }
+
+        _context.Tasks.RemoveRange(completedTasks);
+        await _context.SaveChangesAsync(); // Зберігаємо зміни в базі даних
+
+        return NoContent(); // Повертаємо 204 (No Content) після успішного видалення
     }
 
 }
