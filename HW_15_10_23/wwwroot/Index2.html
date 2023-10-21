@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>To-do CRUD</title>
+</head>
+<body>
+    <h1>To-do CRUD</h1>
+    <input type="date" id="date" name="date" value="2023-10-19">
+    <h3>Add</h3>
+    <form action="javascript:void(0);" method="POST" onsubmit="addItem()">
+        <input type="text" id="add-name" placeholder="Назва справи">
+        <input type="text" id="add-description" placeholder="Опис справи">
+        <input type="checkbox" id="add-isComplete">
+        <input type="date" id="add-dueDate">
+        <input type="submit" value="Add">
+    </form>
+
+    <div id="editForm">
+        <h3>Edit</h3>
+        <form action="javascript:void(0);" onsubmit="updateItem()">
+            <input type="hidden" id="edit-id">
+            <input type="checkbox" id="edit-isComplete">
+            <input type="text" id="edit-name">
+            <input type="text" id="edit-description">
+            <input type="date" id="edit-dueDate">
+            <input type="submit" value="Save">
+            <a onclick="closeInput()" aria-label="Close">&#10006;</a>
+        </form>
+    </div>
+
+    <p id="counter"></p>
+
+    <table>
+        <tr>
+            <th>Is Complete?</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>DueDate</th>
+            <th></th>
+            <th></th>
+        </tr>
+        <tbody id="todos"></tbody>
+    </table>
+
+    <script>
+        getItems();
+    </script>
+
+    <script>
+        const uri = 'api/tasks';
+        let todos = [];
+
+        function getItems() {
+            let date = document.getElementById("date").value;
+            fetch(uri + "?date=" + date)
+                .then(response => response.json())
+                .then(data => _displayItems(data))
+                .catch(error => console.error('Unable to get items.', error));
+        }
+    </script>
+</body>
+</html>

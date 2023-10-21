@@ -7,13 +7,15 @@ namespace HW_15_10_23.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TasksController : Controller
+public class TasksController : ControllerBase
 {
     private readonly SiteDbContext _context; // контекст бази даних
+    private readonly ILogger<TasksController> _logger;
 
-    public TasksController(SiteDbContext context)
+    public TasksController(SiteDbContext context, ILogger<TasksController> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     //public IActionResult Index()
@@ -26,8 +28,17 @@ public class TasksController : Controller
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Task>>> GetTasks([FromQuery] DateTime date)
     {
-        // фільтруємо справи за датою
-        var tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
+        var tasks = new List<Models.Task>();
+        if (date == null)
+        {
+            tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
+        }
+        else 
+        {
+            // фільтруємо справи за датою
+            tasks = await _context.Tasks.Where(t => t.DueDate.Date == date.Date).ToListAsync();
+        }
+       
         return Ok(tasks);
     }
 
@@ -88,12 +99,14 @@ public class TasksController : Controller
     // POST: api/Tasks
     // Додати нову справу
     [HttpPost]
-    public async Task<ActionResult<Task>> PostTask(Task task)
+    public async Task<ActionResult<Task>> PostTask([FromBody] Task task)
     {
+        _logger.LogInformation("Add todo item");
         _context.Tasks.Add(task); // додаємо справу до контексту
         await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
 
-        return CreatedAtAction("GetTask", new { id = task.Id }, task); // повертаємо 201 і справу
+        //return CreatedAtAction("GetTask", new { id = task.Id }, task); // повертаємо 201 і справу
+        return Ok(task);
     }
 
     // DELETE: api/Tasks/5

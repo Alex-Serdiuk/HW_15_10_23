@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <h1>Список справ</h1>
+    <form>
+        <input type="text" id="titleInput" placeholder="Назва справи">
+        <input type="text" id="descriptionInput" placeholder="Опис справи">
+        <label for="completedInput">Справу виконанано?</label>
+        <input type="checkbox" id="completedInput">
+        <input type="date" id="dueDateInput">
+        <button id="addTaskButton">Додати справу</button>
+    </form>
+    <br />
+    <label for="date">Оберіть дату:</label>
+    <input type="date" id="date" name="date" value="2023-10-13">
+    <button id="get-tasks">Отримати справи</button>
+    <table id="tasks-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Назва</th>
+                <th>Опис</th>
+                <th>Термін</th>
+                <th>Виконано</th>
+                <th>Редагувати</th>
+                <th>Видалити</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        //// Коли сторінка завантажена
+        //$(document).ready(function () {
+        //    // Коли натиснуто кнопку "Отримати справи"
+        //    $("#get-tasks").click(function () {
+        //        // Отримуємо значення дати з поля вводу
+        //        var date = $("#date").val();
+        //        // Очищуємо таблицю
+        //        $("#tasks-table tbody").html("");
+        //        // Виконуємо GET-запит до Web API з параметром date
+        //        $.get("/api/Tasks", { date: date }, function (data) {
+        //            // Якщо запит успішний
+        //            // Проходимо по масиву справ
+        //            $.each(data, function (index, task) {
+        //                // Створюємо рядок таблиці з даними справи
+        //                var row = $("<tr>");
+        //                row.append($("<td>").text(task.id));
+        //                row.append($("<td>").text(task.title));
+        //                row.append($("<td>").text(task.description));
+        //                row.append($("<td>").text(task.dueDate));
+        //                row.append($("<td>").text(task.completed ? "Так" : "Ні"));
+        //                row.append($("<td>").html("<button class='edit-task'>Редагувати</button>"));
+        //                row.append($("<td>").html("<button class='delete-task'>Видалити</button>"));
+        //                // Додаємо рядок до таблиці
+        //                $("#tasks-table tbody").append(row);
+        //            });
+        //        });
+        //    });
+        //});
+
+        $(document).ready(function () {
+            // Коли натиснуто кнопку "Отримати справи"
+            $("#get-tasks").click(function () {
+                // Отримуємо значення дати з поля вводу
+                var date = $("#date").val();
+                // Очищуємо таблицю
+                $("#tasks-table tbody").html("");
+                // Виконуємо GET-запит до Web API з параметром date
+                fetch("/api/Tasks?date=" + date)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Помилка при отриманні списку справ");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Проходимо по масиву справ
+                        data.forEach(function (task) {
+                            // Створюємо рядок таблиці з даними справи
+                            var row = $("<tr>");
+                            row.append($("<td>").text(task.id));
+                            row.append($("<td>").text(task.title));
+                            row.append($("<td>").text(task.description));
+                            row.append($("<td>").text(task.dueDate));
+                            row.append($("<td>").text(task.completed ? "Так" : "Ні"));
+                            row.append($("<td>").html("<button class='edit-task'>Редагувати</button>"));
+                            row.append($("<td>").html("<button class='delete-task'>Видалити</button>"));
+                            // Додаємо рядок до таблиці
+                            $("#tasks-table tbody").append(row);
+                        });
+                    })
+                    .catch(error => {
+                        alert(error.message);
+                    });
+            });
+        });
+
+        //Додати нову справу
+        $(document).ready(function () {
+            $('#addTaskButton').click(function () {
+                var id = 0;
+                var title = $('#titleInput').val();
+                var description = $('#descriptionInput').val();
+                var completed = $('#completedInput').prop('checked'); // Отримати значення чекбоксу як булевий тип
+                var dueDate = $('#dueDateInput').val();
+                var newTask = {id: id, title: title, description: description, completed: completed, dueDate: dueDate };
+                //$.post('/api/tasks', newTask, function (data) {
+                //    alert('Справу додано з ідентифікатором ' + data.id);
+                //});
+                fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json' // Встановлення правильного заголовка Content-Type
+                    },
+                    body: JSON.stringify(newTask) // Перетворення об'єкта в JSON
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Помилка HTTP: ' + response.status);
+                        }
+                        return response.json(); // Парсимо JSON відповідь
+                    })
+                    .then(data => {
+                        alert('Справу додано з ідентифікатором ' + data.id);
+                    })
+                    .catch(error => {
+                        alert('Помилка під час додавання справи: ' + error);
+                    });
+            });
+        });
+
+        //Додати нову справу
+        //$(document).ready(function () {
+        //    $('#addTaskButton').click(function () {
+        //        var id = 0;
+        //        var title = $('#titleInput').val();
+        //        var description = $('#descriptionInput').val();
+        //        var completed = $('#completedInput').val();
+        //        var dueDate = $('#dueDateInput').prop('checked'); // Отримати значення чекбоксу як булевий тип
+        //        var newTask = { id: id, title: title, description: description, completed: completed, dueDate: dueDate };
+        //        //$.post('/api/tasks', newTask, function (data) {
+        //        //    alert('Справу додано з ідентифікатором ' + data.id);
+        //        //});
+        //        $.ajax({
+        //            url: '/api/tasks',
+        //            type: 'POST',
+        //            data: JSON.stringify(newTask), // Перетворення об'єкта в JSON
+        //            contentType: 'application/json', // Встановлення правильного заголовка Content-Type
+        //            success: function (data) {
+        //                alert('Справу додано з ідентифікатором ' + data.id);
+        //            },
+        //            error: function () {
+        //                alert('Помилка під час додавання справи');
+        //            }
+        //        });
+        //    });
+        //});
+
+        //$("button#addTaskButton").on('click', () => {
+        //    var title = $('#titleInput').val();
+        //    var description = $('#descriptionInput').val();
+        //    var completed = $('#completedInput').val();
+        //    var dueDate = $('#dueDateInput').val();
+        //    fetch("/api/tasks", {
+        //        method: "post",
+        //        headers: {
+        //            "Content-Type": "application/json"
+        //        },
+        //        body: JSON.stringify({
+        //            title: title,
+        //            description: description,
+        //            completed: completed,
+        //            dueDate: dueDate
+        //        })
+        //    }).then(r => r.json())
+                
+        //    })
+
+        //})
+    </script>
+</body>
+</html>

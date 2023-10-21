@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="content">
+
+    </div>
+    <input type="date" id="date" name="date" value="2023-10-19">
+    <button id="refresh">Refresh</button>
+    <button id="add-task">Add</button>
+
+    <script>
+        let items = []
+
+        $("button#refresh").on('click', async () => {
+            await refreshData()
+            renderList()
+        })
+
+        async function refreshData() {
+            // Отримуємо значення дати з поля вводу
+            var date = await $("#date").val();
+            await fetch("/api/Tasks?date=" + date)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Помилка під час запиту до сервера");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    items = data
+                })
+
+            function renderList() {
+                let el = $("<ul></ul>")
+
+                items.forEach(item => {
+                    el.append($(`<li data-id="${item.id}">${item.id} ${item.title} ${item.description} ${item.dueDate} <input type="checkbox" ${item.completed ? 'checked' : null}> <button class="delete-item">X</button></li>`))
+                })
+
+                $("#content").empty().append(el)
+            }
+    </script>
+</body>
+</html>

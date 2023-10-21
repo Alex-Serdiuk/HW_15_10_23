@@ -1,8 +1,22 @@
+
+using Microsoft.EntityFrameworkCore;
+using react.Models;
+
+IConfigurationRoot configuration = new ConfigurationBuilder()
+    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+    .AddJsonFile("appsettings.json")
+    .Build();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddDbContext<SiteDbContext>(options =>
+{
+    options.UseSqlite(configuration.GetConnectionString("Default"));
+});
 
 var app = builder.Build();
 
