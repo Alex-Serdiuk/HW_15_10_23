@@ -1,5 +1,6 @@
 using HW_15_10_23.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
     .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -30,6 +31,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
+//app.UseStaticFiles(new StaticFileOptions
+//{
+//    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")),
+//    RequestPath = "/Index2.html" // Опціонально, для вказання власного URL-шляху
+//});
 
 app.UseHttpsRedirection();
 
